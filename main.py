@@ -1,10 +1,9 @@
-import os
 import subprocess
 from datetime import datetime
 
 from dashboard import build_html
 from data import fetch_data
-from notify import check_alerts, send_email, send_morning_notification
+from notify import check_alerts, send_morning_notification
 
 DASHBOARD_URL = "https://kaspemart.github.io/morning-dashboard"
 
@@ -35,12 +34,6 @@ def main():
 
     print("Sending morning notification...")
     send_morning_notification()
-
-    if os.environ.get("SEZNAM_USER"):
-        print("Sending email...")
-        send_email(DASHBOARD_URL)
-    else:
-        print(f"Email env vars not set — dashboard at {DASHBOARD_URL}")
 
     print("Done.")
 

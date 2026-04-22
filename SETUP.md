@@ -16,59 +16,45 @@ cd morning-dashboard
 uv sync
 ```
 
-## 3. Create a sender email account
+## 3. Fix SSL certificates (Mac only)
 
-Create a dedicated throwaway email account used only for sending (e.g. seznam.cz works well). This account's credentials will be stored in the Claude Routine, so don't use a personal account.
-
-## 4. Set environment variables
-
-Add these to your `~/.zshrc` (Mac/zsh) or `~/.bashrc` (Linux/bash):
+Python on Mac requires a one-time certificate install to make HTTPS requests:
 
 ```bash
-export SEZNAM_USER=your.sender@seznam.cz   # the throwaway sending account
-export SEZNAM_PASS=your_password
+/Applications/Python\ 3.13/Install\ Certificates.command
 ```
 
-Then reload:
+## 4. Set up ntfy on your phone
 
-```bash
-source ~/.zshrc
-```
+1. Install the **ntfy** app (free, iOS/Android)
+2. Subscribe to topic: `morning-snp-notification`
 
-> If using a different email provider, update the SMTP server and port in `send_email()` in `main.py`.
+That's it — no account or credentials needed.
 
-## 5. Update the recipient email
-
-In `main.py`, find the `send_email` function and change the recipient:
-
-```python
-recipient = "your.name@yourcompany.com"
-```
-
-## 6. Enable GitHub Pages
+## 5. Enable GitHub Pages
 
 In the GitHub repo: **Settings → Pages → Source → Deploy from a branch → main / root → Save**.
 
 The dashboard will be live at `https://<your-github-username>.github.io/morning-dashboard`.
 
-## 7. Test it
+Update `DASHBOARD_URL` in `notify.py` to match your GitHub Pages URL.
+
+## 6. Test it
 
 ```bash
 uv run python main.py
 ```
 
-Check that `index.html` was pushed to the repo and that you received the email.
+Check that `index.html` was pushed to the repo and that you received a push notification on your phone.
 
-## 8. Create the Claude Routine
+## 7. Create the Claude Routine
 
-In Claude Code, ask Claude to create a remote trigger that runs `uv run python main.py` every weekday at 8am your local time. Provide:
-- The repo URL
-- `SEZNAM_USER` and `SEZNAM_PASS` values (stored in the trigger prompt)
-- Your local timezone for correct UTC conversion
+In Claude Code, ask Claude to create a remote trigger that runs `uv run python main.py` every weekday at 8am your local time. Provide the repo URL and your local timezone for correct UTC conversion.
 
 Manage existing routines at: https://claude.ai/code/scheduled
 
 ## Notes
 
-- **DST**: Cron runs in UTC. Update the trigger when clocks change (e.g. `0 6 * * 1-5` in summer, `0 7 * * 1-5` in winter for Prague/CET).
-- **Extending the dashboard**: Add new data sources and Plotly figures in `main.py` inside `build_html()`.
+- **DST**: Cron runs in UTC. Update the trigger when clocks change (e.g. `0 6 * * 1-5` in summer CEST, `0 7 * * 1-5` in winter CET for Prague).
+- **Alert thresholds**: configured in `notify.py` — 7% drop from 3-month high, 3% weekly drop.
+- **Extending the dashboard**: add new data sources and Plotly figures in `data.py` and `dashboard.py`.

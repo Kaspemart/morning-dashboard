@@ -1,7 +1,4 @@
-import os
-import smtplib
 import urllib.request
-from email.mime.text import MIMEText
 
 NTFY_TOPIC = "morning-snp-notification"
 
@@ -69,18 +66,3 @@ def check_alerts(hist, info):
         print(f"No weekly alert: {weekly_change:.1f}% this week")
 
 
-def send_email(dashboard_url):
-    seznam_user = os.environ["SEZNAM_USER"]
-    seznam_pass = os.environ["SEZNAM_PASS"]
-    recipient = "martin.kasperlik@rsj.com"
-
-    from datetime import datetime
-    body = f"Your morning dashboard is ready:\n\n{dashboard_url}\n"
-    msg = MIMEText(body)
-    msg["Subject"] = f"Morning Dashboard — {datetime.now().strftime('%b %d, %Y')}"
-    msg["From"] = seznam_user
-    msg["To"] = recipient
-
-    with smtplib.SMTP_SSL("smtp.seznam.cz", 465) as server:
-        server.login(seznam_user, seznam_pass)
-        server.sendmail(seznam_user, recipient, msg.as_string())
