@@ -6,14 +6,29 @@ from email.mime.text import MIMEText
 NTFY_TOPIC = "morning-snp-notification"
 
 
-def send_ntfy(message, title):
+DASHBOARD_URL = "https://kaspemart.github.io/morning-dashboard"
+
+
+def send_ntfy(message, title, click_url=None):
+    headers = {"Title": title}
+    if click_url:
+        headers["Click"] = click_url
     req = urllib.request.Request(
         f"https://ntfy.sh/{NTFY_TOPIC}",
         data=message.encode("utf-8"),
-        headers={"Title": title},
+        headers=headers,
         method="POST",
     )
     urllib.request.urlopen(req)
+
+
+def send_morning_notification():
+    send_ntfy(
+        "Your morning dashboard is ready.",
+        title="Morning Dashboard",
+        click_url=DASHBOARD_URL,
+    )
+    print("Morning notification sent")
 
 
 def check_alerts(hist, info):
@@ -30,6 +45,7 @@ def check_alerts(hist, info):
             f"(£{high_3m:,.2f} → £{current_price:,.2f}). "
             f"Good opportunity to buy more S&P 500.",
             title="S&P 500 Buy Opportunity",
+            click_url=DASHBOARD_URL,
         )
         print(f"Alert sent: down {abs(drop_from_high):.1f}% from 3-month high")
     else:
@@ -46,6 +62,7 @@ def check_alerts(hist, info):
             f"(£{price_week_ago:,.2f} → £{current_price:,.2f}). "
             f"Consider topping up your S&P 500 investment.",
             title="S&P 500 Weekly Drop Alert",
+            click_url=DASHBOARD_URL,
         )
         print(f"Alert sent: down {abs(weekly_change):.1f}% this week")
     else:

@@ -4,7 +4,7 @@ from datetime import datetime
 
 from dashboard import build_html
 from data import fetch_data
-from notify import check_alerts, send_email
+from notify import check_alerts, send_email, send_morning_notification
 
 DASHBOARD_URL = "https://kaspemart.github.io/morning-dashboard"
 
@@ -32,6 +32,9 @@ def main():
 
     print("Pushing to GitHub Pages...")
     push_dashboard(html)
+
+    print("Sending morning notification...")
+    send_morning_notification()
 
     if os.environ.get("SEZNAM_USER"):
         print("Sending email...")
