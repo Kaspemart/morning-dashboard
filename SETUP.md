@@ -1,6 +1,19 @@
 # Setup Guide
 
-Steps to get the morning dashboard running from scratch on a new machine.
+## Just want to receive notifications?
+
+If someone else is already running the dashboard, you only need to:
+
+1. Install the **ntfy** app (free, iOS/Android)
+2. Subscribe to topic: `morning-snp-notification`
+
+You'll receive the same daily notification and buy alerts automatically. No code or accounts needed.
+
+---
+
+## Full setup from scratch
+
+Steps to get the morning dashboard running on a new machine.
 
 ## 1. Prerequisites
 
