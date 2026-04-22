@@ -1,6 +1,7 @@
 import os
 import smtplib
 import subprocess
+import urllib.request
 from datetime import datetime
 from email.mime.text import MIMEText
 
@@ -8,12 +9,70 @@ import plotly.graph_objects as go
 import yfinance as yf
 from plotly.subplots import make_subplots
 
+NTFY_TOPIC = "morning-snp-notification"
 
-def fetch_sp500():
+
+def fetch_data():
     ticker = yf.Ticker("VUAG.L")
     hist = ticker.history(period="1y")
     info = ticker.fast_info
     return hist, info
+
+
+def calculate_rsi(prices, period=14):
+    delta = prices.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.rolling(window=period).mean()
+    avg_loss = loss.rolling(window=period).mean()
+    rs = avg_gain / avg_loss
+    return (100 - (100 / (1 + rs))).iloc[-1]
+
+
+def send_ntfy(message, title):
+    req = urllib.request.Request(
+        f"https://ntfy.sh/{NTFY_TOPIC}",
+        data=message.encode("utf-8"),
+        headers={"Title": title},
+        method="POST",
+    )
+    urllib.request.urlopen(req)
+
+
+def check_alerts(hist, info):
+    current_price = info.last_price
+
+    # Alert 1: down 7%+ from 3-month high
+    hist_3m = hist.iloc[-63:] if len(hist) >= 63 else hist
+    high_3m = hist_3m["Close"].max()
+    drop_from_high = (current_price - high_3m) / high_3m * 100
+
+    if drop_from_high <= -7:
+        send_ntfy(
+            f"VUAG.L is down {abs(drop_from_high):.1f}% from its 3-month high "
+            f"(£{high_3m:,.2f} → £{current_price:,.2f}). "
+            f"Good opportunity to buy more S&P 500.",
+            title="S&P 500 Buy Opportunity",
+        )
+        print(f"Alert sent: down {abs(drop_from_high):.1f}% from 3-month high")
+    else:
+        print(f"No 3-month alert: {drop_from_high:.1f}% from high")
+
+    # Alert 2: down 3%+ over last week (~5 trading days)
+    hist_week = hist.iloc[-5:] if len(hist) >= 5 else hist
+    price_week_ago = hist_week["Close"].iloc[0]
+    weekly_change = (current_price - price_week_ago) / price_week_ago * 100
+
+    if weekly_change <= -3:
+        send_ntfy(
+            f"VUAG.L is down {abs(weekly_change):.1f}% this week "
+            f"(£{price_week_ago:,.2f} → £{current_price:,.2f}). "
+            f"Consider topping up your S&P 500 investment.",
+            title="S&P 500 Weekly Drop Alert",
+        )
+        print(f"Alert sent: down {abs(weekly_change):.1f}% this week")
+    else:
+        print(f"No weekly alert: {weekly_change:.1f}% this week")
 
 
 def build_html(hist, info):
@@ -21,10 +80,23 @@ def build_html(hist, info):
     prev_close = info.previous_close
     day_change = current_price - prev_close
     day_change_pct = (day_change / prev_close) * 100
+
+    hist_3m = hist.iloc[-63:] if len(hist) >= 63 else hist
+    high_3m = hist_3m["Close"].max()
+    low_3m = hist_3m["Close"].min()
+
+    hist_week = hist.iloc[-5:] if len(hist) >= 5 else hist
+    price_week_ago = hist_week["Close"].iloc[0]
+    weekly_change_pct = (current_price - price_week_ago) / price_week_ago * 100
+
     year_start = hist["Close"].iloc[0]
     ytd_change_pct = ((current_price - year_start) / year_start) * 100
-    high_52w = hist["Close"].max()
-    low_52w = hist["Close"].min()
+
+    rsi = calculate_rsi(hist["Close"])
+    rsi_color = "#22c55e" if rsi < 40 else "#ef4444" if rsi > 65 else "#e2e8f0"
+
+    arrow_day = "▲" if day_change >= 0 else "▼"
+    arrow_week = "▲" if weekly_change_pct >= 0 else "▼"
 
     fig = make_subplots(
         rows=2, cols=1,
@@ -38,7 +110,7 @@ def build_html(hist, info):
             x=hist.index,
             y=hist["Close"],
             mode="lines",
-            name="S&P 500",
+            name="VUAG.L",
             line=dict(color="#2563eb", width=2),
             hovertemplate="%{x|%b %d, %Y}<br>£%{y:,.2f}<extra></extra>",
         ),
@@ -65,16 +137,11 @@ def build_html(hist, info):
         hovermode="x unified",
         margin=dict(l=60, r=40, t=80, b=40),
         xaxis2=dict(showgrid=False),
-        yaxis=dict(gridcolor="#334155", tickformat=",.0f"),
+        yaxis=dict(gridcolor="#334155", tickformat=",.0f", tickprefix="£"),
         yaxis2=dict(gridcolor="#334155", tickformat=".2s"),
     )
 
     chart_html = fig.to_html(full_html=False, include_plotlyjs="cdn")
-
-    change_color = "#22c55e" if day_change >= 0 else "#ef4444"
-    ytd_color = "#22c55e" if ytd_change_pct >= 0 else "#ef4444"
-    arrow = "▲" if day_change >= 0 else "▼"
-
     generated = datetime.now().strftime("%A, %B %d %Y — %H:%M")
 
     html = f"""<!DOCTYPE html>
@@ -89,11 +156,11 @@ def build_html(hist, info):
     h1 {{ font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }}
     .subtitle {{ color: #94a3b8; font-size: 0.875rem; margin-bottom: 24px; }}
     .stats {{ display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }}
-    .card {{ background: #1e293b; border-radius: 12px; padding: 16px 24px; flex: 1; min-width: 160px; }}
+    .card {{ background: #1e293b; border-radius: 12px; padding: 16px 24px; flex: 1; min-width: 150px; }}
     .card-label {{ font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }}
-    .card-value {{ font-size: 1.5rem; font-weight: 700; }}
-    .card-value.positive {{ color: #22c55e; }}
-    .card-value.negative {{ color: #ef4444; }}
+    .card-value {{ font-size: 1.4rem; font-weight: 700; }}
+    .positive {{ color: #22c55e; }}
+    .negative {{ color: #ef4444; }}
     .chart-wrapper {{ background: #1e293b; border-radius: 12px; padding: 8px; }}
   </style>
 </head>
@@ -103,24 +170,32 @@ def build_html(hist, info):
 
   <div class="stats">
     <div class="card">
-      <div class="card-label">VUAG.L</div>
+      <div class="card-label">Vanguard S&amp;P 500</div>
       <div class="card-value">£{current_price:,.2f}</div>
     </div>
     <div class="card">
       <div class="card-label">Day Change</div>
-      <div class="card-value {'positive' if day_change >= 0 else 'negative'}">{arrow} £{abs(day_change):,.2f} ({day_change_pct:+.2f}%)</div>
+      <div class="card-value {'positive' if day_change >= 0 else 'negative'}">{arrow_day} £{abs(day_change):,.2f} ({day_change_pct:+.2f}%)</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Week Change</div>
+      <div class="card-value {'positive' if weekly_change_pct >= 0 else 'negative'}">{arrow_week} {weekly_change_pct:+.2f}%</div>
     </div>
     <div class="card">
       <div class="card-label">YTD</div>
       <div class="card-value {'positive' if ytd_change_pct >= 0 else 'negative'}">{ytd_change_pct:+.2f}%</div>
     </div>
     <div class="card">
-      <div class="card-label">52W High</div>
-      <div class="card-value">£{high_52w:,.2f}</div>
+      <div class="card-label">3M High</div>
+      <div class="card-value">£{high_3m:,.2f}</div>
     </div>
     <div class="card">
-      <div class="card-label">52W Low</div>
-      <div class="card-value">£{low_52w:,.2f}</div>
+      <div class="card-label">3M Low</div>
+      <div class="card-value">£{low_3m:,.2f}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">RSI (14-day)</div>
+      <div class="card-value" style="color: {rsi_color}">{rsi:.1f}</div>
     </div>
   </div>
 
@@ -162,7 +237,10 @@ def send_email(dashboard_url):
 
 def main():
     print("Fetching VUAG.L data...")
-    hist, info = fetch_sp500()
+    hist, info = fetch_data()
+
+    print("Checking alerts...")
+    check_alerts(hist, info)
 
     print("Building dashboard...")
     html = build_html(hist, info)
