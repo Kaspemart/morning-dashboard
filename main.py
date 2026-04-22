@@ -10,19 +10,15 @@ from plotly.subplots import make_subplots
 
 
 def fetch_sp500():
-    ticker = yf.Ticker("^GSPC")
+    ticker = yf.Ticker("VUAG.L")
     hist = ticker.history(period="1y")
     info = ticker.fast_info
-    fx = yf.Ticker("GBPUSD=X").fast_info.last_price  # USD per 1 GBP
-    gbp_rate = 1 / fx  # multiply USD prices by this to get GBP
-    hist = hist.copy()
-    hist["Close"] = hist["Close"] * gbp_rate
-    return hist, info, gbp_rate
+    return hist, info
 
 
-def build_html(hist, info, gbp_rate):
-    current_price = info.last_price * gbp_rate
-    prev_close = info.previous_close * gbp_rate
+def build_html(hist, info):
+    current_price = info.last_price
+    prev_close = info.previous_close
     day_change = current_price - prev_close
     day_change_pct = (day_change / prev_close) * 100
     year_start = hist["Close"].iloc[0]
@@ -61,7 +57,7 @@ def build_html(hist, info, gbp_rate):
     )
 
     fig.update_layout(
-        title=dict(text="S&P 500 — 1 Year (GBP)", font=dict(size=20)),
+        title=dict(text="Vanguard S&P 500 (Acc) — VUAG.L — 1 Year", font=dict(size=20)),
         paper_bgcolor="#0f172a",
         plot_bgcolor="#1e293b",
         font=dict(color="#e2e8f0"),
@@ -107,7 +103,7 @@ def build_html(hist, info, gbp_rate):
 
   <div class="stats">
     <div class="card">
-      <div class="card-label">S&amp;P 500 (GBP)</div>
+      <div class="card-label">VUAG.L</div>
       <div class="card-value">£{current_price:,.2f}</div>
     </div>
     <div class="card">
@@ -165,11 +161,11 @@ def send_email(dashboard_url):
 
 
 def main():
-    print("Fetching S&P 500 data...")
-    hist, info, gbp_rate = fetch_sp500()
+    print("Fetching VUAG.L data...")
+    hist, info = fetch_sp500()
 
     print("Building dashboard...")
-    html = build_html(hist, info, gbp_rate)
+    html = build_html(hist, info)
 
     print("Pushing to GitHub Pages...")
     push_dashboard(html)
