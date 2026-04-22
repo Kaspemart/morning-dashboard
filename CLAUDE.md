@@ -32,11 +32,10 @@ pyproject.toml   # Python dependencies (uv)
 
 ## Environment variables required
 
-| Variable        | Purpose                        |
-|-----------------|--------------------------------|
-| `GMAIL_USER`    | Gmail address used to send     |
-| `GMAIL_APP_PASS`| Gmail app password             |
-| `NOTIFY_EMAIL`  | Recipient email address        |
+| Variable       | Purpose                                      |
+|----------------|----------------------------------------------|
+| `SEZNAM_USER`  | seznam.cz address used to send               |
+| `SEZNAM_PASS`  | seznam.cz password                           |
 
 ## Extending
 
