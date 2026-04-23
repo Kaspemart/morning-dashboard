@@ -1,9 +1,6 @@
 from datetime import datetime
 
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-
-from data import calculate_rsi
 
 
 def build_html(hist, info):
@@ -20,21 +17,13 @@ def build_html(hist, info):
     price_week_ago = hist_week["Close"].iloc[0]
     weekly_change_pct = (current_price - price_week_ago) / price_week_ago * 100
 
-    year_start = hist["Close"].iloc[0]
+    year_start = hist[hist.index.year == datetime.now().year]["Close"].iloc[0] if any(hist.index.year == datetime.now().year) else hist["Close"].iloc[0]
     ytd_change_pct = ((current_price - year_start) / year_start) * 100
-
-    rsi = calculate_rsi(hist["Close"])
-    rsi_color = "#22c55e" if rsi < 40 else "#ef4444" if rsi > 65 else "#e2e8f0"
 
     arrow_day = "▲" if day_change >= 0 else "▼"
     arrow_week = "▲" if weekly_change_pct >= 0 else "▼"
 
-    fig = make_subplots(
-        rows=2, cols=1,
-        shared_xaxes=True,
-        row_heights=[0.7, 0.3],
-        vertical_spacing=0.05,
-    )
+    fig = go.Figure()
 
     fig.add_trace(
         go.Scatter(
@@ -43,33 +32,41 @@ def build_html(hist, info):
             mode="lines",
             name="VUAG.L",
             line=dict(color="#2563eb", width=2),
+            fill="tozeroy",
+            fillcolor="rgba(37, 99, 235, 0.1)",
             hovertemplate="%{x|%b %d, %Y}<br>£%{y:,.2f}<extra></extra>",
-        ),
-        row=1, col=1,
-    )
-
-    fig.add_trace(
-        go.Bar(
-            x=hist.index,
-            y=hist["Volume"],
-            name="Volume",
-            marker_color="#93c5fd",
-            hovertemplate="%{x|%b %d, %Y}<br>Vol: %{y:,.0f}<extra></extra>",
-        ),
-        row=2, col=1,
+        )
     )
 
     fig.update_layout(
-        title=dict(text="Vanguard S&P 500 (Acc) — VUAG.L — 1 Year", font=dict(size=20)),
+        title=dict(text="Vanguard S&P 500 (Acc) — VUAG.L", font=dict(size=20)),
         paper_bgcolor="#0f172a",
         plot_bgcolor="#1e293b",
         font=dict(color="#e2e8f0"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         hovermode="x unified",
         margin=dict(l=60, r=40, t=80, b=40),
-        xaxis2=dict(showgrid=False),
+        showlegend=False,
         yaxis=dict(gridcolor="#334155", tickformat=",.0f", tickprefix="£"),
-        yaxis2=dict(gridcolor="#334155", tickformat=".2s"),
+        xaxis=dict(
+            gridcolor="#334155",
+            rangeselector=dict(
+                bgcolor="#1e293b",
+                activecolor="#2563eb",
+                bordercolor="#334155",
+                font=dict(color="#e2e8f0"),
+                buttons=[
+                    dict(count=1, label="1D", step="day", stepmode="backward"),
+                    dict(count=7, label="1W", step="day", stepmode="backward"),
+                    dict(count=1, label="1M", step="month", stepmode="backward"),
+                    dict(count=3, label="3M", step="month", stepmode="backward"),
+                    dict(count=1, label="1Y", step="year", stepmode="backward"),
+                    dict(count=5, label="5Y", step="year", stepmode="backward"),
+                    dict(step="all", label="Max"),
+                ],
+            ),
+            rangeslider=dict(visible=False),
+            type="date",
+        ),
     )
 
     chart_html = fig.to_html(full_html=False, include_plotlyjs="cdn")
@@ -123,10 +120,6 @@ def build_html(hist, info):
     <div class="card">
       <div class="card-label">3M Low</div>
       <div class="card-value">£{low_3m:,.2f}</div>
-    </div>
-    <div class="card">
-      <div class="card-label">RSI (14-day)</div>
-      <div class="card-value" style="color: {rsi_color}">{rsi:.1f}</div>
     </div>
   </div>
 
