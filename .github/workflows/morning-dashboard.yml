@@ -2,7 +2,7 @@ name: Morning Dashboard
 
 on:
   schedule:
-    - cron: '0 6 * * 1-5'  # 8am Prague (CEST/UTC+2) — update to '0 7 * * 1-5' in winter
+    - cron: '0 5 * * 1-5'  # 7am Prague (CEST/UTC+2) — update to '0 6 * * 1-5' in winter
   workflow_dispatch:  # allows manual trigger from GitHub UI
 
 jobs:

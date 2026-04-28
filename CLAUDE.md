@@ -66,7 +66,7 @@ Interactive Plotly line chart with area fill. Time range buttons: **1D / 1W / 1M
 
 GitHub Actions workflow: `.github/workflows/morning-dashboard.yml`
 
-- Cron: `0 6 * * 1-5` (8am Prague, CEST/UTC+2 — **change to `0 7 * * 1-5` in winter when clocks go back to CET/UTC+1**)
+- Cron: `0 5 * * 1-5` (7am Prague, CEST/UTC+2 — **change to `0 6 * * 1-5` in winter when clocks go back to CET/UTC+1**)
 - Can also be triggered manually: GitHub repo → Actions → Morning Dashboard → Run workflow
 - Uses `GITHUB_TOKEN` for git push — no secrets needed
 
