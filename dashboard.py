@@ -1,9 +1,10 @@
 from datetime import datetime
 
+import markdown
 import plotly.graph_objects as go
 
 
-def build_html(hist, info):
+def build_html(hist, info, news_md=""):
     current_price = info.last_price
     prev_close = info.previous_close
     day_change = current_price - prev_close
@@ -70,6 +71,7 @@ def build_html(hist, info):
     )
 
     chart_html = fig.to_html(full_html=False, include_plotlyjs="cdn")
+    news_html = markdown.markdown(news_md, extensions=["extra"]) if news_md else ""
     generated = datetime.now().strftime("%A, %B %d %Y — %H:%M")
 
     return f"""<!DOCTYPE html>
@@ -90,6 +92,16 @@ def build_html(hist, info):
     .positive {{ color: #22c55e; }}
     .negative {{ color: #ef4444; }}
     .chart-wrapper {{ background: #1e293b; border-radius: 12px; padding: 8px; }}
+    .news-section {{ background: #1e293b; border-radius: 12px; padding: 28px 32px; margin-top: 24px; }}
+    .news-section h1 {{ font-size: 1.4rem; font-weight: 700; color: #e2e8f0; margin: 0 0 20px; }}
+    .news-section h2 {{ font-size: 1.1rem; font-weight: 700; color: #93c5fd; margin: 24px 0 8px; }}
+    .news-section h3 {{ font-size: 0.95rem; font-weight: 600; color: #7dd3fc; margin: 16px 0 6px; }}
+    .news-section p {{ color: #cbd5e1; line-height: 1.65; margin: 0 0 10px; font-size: 0.9rem; }}
+    .news-section ul, .news-section ol {{ color: #cbd5e1; padding-left: 20px; margin: 0 0 10px; }}
+    .news-section li {{ line-height: 1.6; margin-bottom: 4px; font-size: 0.9rem; }}
+    .news-section strong {{ color: #e2e8f0; }}
+    .news-section em {{ color: #94a3b8; }}
+    .news-section hr {{ border: none; border-top: 1px solid #334155; margin: 20px 0; }}
   </style>
 </head>
 <body>
@@ -126,5 +138,7 @@ def build_html(hist, info):
   <div class="chart-wrapper">
     {chart_html}
   </div>
+
+  {f'<div class="news-section">{news_html}</div>' if news_html else ""}
 </body>
 </html>"""

@@ -27,4 +27,6 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Kaspemart/morning-dashboard
 
       - name: Run dashboard update
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: uv run python main.py
