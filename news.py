@@ -46,15 +46,18 @@ def fetch_news():
             "rather than re-introducing known events cold.\n\n" + history
         )
 
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=NEWS_PROMPT,
-        config=types.GenerateContentConfig(
-            system_instruction=system,
-            tools=[types.Tool(google_search=types.GoogleSearch())],
-        ),
-    )
-
-    summary = response.text
-    _save_today(summary)
-    return summary
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-preview-05-20",
+            contents=NEWS_PROMPT,
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                tools=[types.Tool(google_search=types.GoogleSearch())],
+            ),
+        )
+        summary = response.text
+        _save_today(summary)
+        return summary
+    except Exception as e:
+        print(f"News briefing failed: {e}")
+        return f"_News briefing unavailable — API error: {type(e).__name__}_"
