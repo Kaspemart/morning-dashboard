@@ -48,7 +48,7 @@ def fetch_news():
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash-preview-05-20",
+            model="gemini-2.5-flash",
             contents=NEWS_PROMPT,
             config=types.GenerateContentConfig(
                 system_instruction=system,
