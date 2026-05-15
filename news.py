@@ -31,7 +31,7 @@ def fetch_news():
     if not api_key:
         return "_News briefing unavailable — GEMINI_API_KEY not set._"
 
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=api_key, http_options={"timeout": 90})
 
     history = _load_history()
     system = (
@@ -53,6 +53,7 @@ def fetch_news():
             config=types.GenerateContentConfig(
                 system_instruction=system,
                 tools=[types.Tool(google_search=types.GoogleSearch())],
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
         summary = response.text
