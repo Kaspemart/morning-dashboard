@@ -1,3 +1,4 @@
+import concurrent.futures
 import os
 from datetime import datetime
 from pathlib import Path
@@ -31,7 +32,7 @@ def fetch_news():
     if not api_key:
         return "_News briefing unavailable — GEMINI_API_KEY not set._"
 
-    client = genai.Client(api_key=api_key, http_options={"timeout": 300})
+    client = genai.Client(api_key=api_key)
 
     history = _load_history()
     system = (
@@ -46,8 +47,8 @@ def fetch_news():
             "rather than re-introducing known events cold.\n\n" + history
         )
 
-    try:
-        response = client.models.generate_content(
+    def _call():
+        return client.models.generate_content(
             model="gemini-2.5-flash",
             contents=NEWS_PROMPT,
             config=types.GenerateContentConfig(
@@ -56,9 +57,17 @@ def fetch_news():
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(_call)
+            response = future.result(timeout=300)
         summary = response.text
         _save_today(summary)
         return summary
+    except concurrent.futures.TimeoutError:
+        print("News briefing timed out after 300s")
+        return "_News briefing unavailable — timed out_"
     except Exception as e:
         print(f"News briefing failed: {e}")
         return f"_News briefing unavailable — {type(e).__name__}: {e}_"
