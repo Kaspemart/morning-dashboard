@@ -64,4 +64,4 @@ def fetch_news():
         return summary
     except Exception as e:
         print(f"News briefing failed: {e}")
-        return f"_News briefing unavailable — API error: {type(e).__name__}_"
+        return f"_News briefing unavailable — {type(e).__name__}: {e}_"
