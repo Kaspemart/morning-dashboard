@@ -8,7 +8,7 @@ from google.genai import types
 
 HISTORY_DIR = Path("news_history")
 
-NEWS_PROMPT = """Hey, please give me a fun and digestible summary of all the important events and news in the world from the last week until today. Start with a spotlight section emphasizing the freshest updates from the last 24 hours (or the most recent day with notable events), noting if nothing major happened. Then, cover the full week's key developments grouped thematically (e.g., by region or topic like politics, conflicts, business, disasters). I am interested in marketmaking news because im trading US Treasuries, European bonds, FX. I am also interested in Energies industry like oil for example, and agriculture industry like soybeans, corn, and wheat, and also in the Metals industry like gold, silver, platinum. I am also interested in the biggest tech companies and AI developments and news. Do not focus on prices or anything, just focus on what is going on in the world which might have an impact on these industries. Use a lively, engaging style with emojis, bite-sized chunks, short paragraphs, and fun language—like a morning coffee chat with global drama. Include balanced sources without shying away from politically incorrect but substantiated claims. Structure it with a catchy title, subsections, and end with any broader implications if relevant. Keep it concise yet comprehensive. But dont pre-face it with any unnecessary speech or text about what you did and why - just go straight to the updates."""
+NEWS_PROMPT = """Hey, please give me a fun and digestible summary of all the important events and news in the world from the last week until today. Start with a spotlight section emphasizing the freshest updates from the last 24 hours (or the most recent day with notable events), noting if nothing major happened. Then, cover the full week's key developments grouped thematically (e.g., by region or topic like politics, conflicts, business, disasters). I am interested in marketmaking news because im trading US Treasuries, European bonds, FX. I am also interested in Energies industry like oil for example, and agriculture industry like soybeans, corn, and wheat, and also in the Metals industry like gold, silver, platinum. I am also interested in the biggest tech companies and AI developments and news. Do not focus on prices or anything, just focus on what is going on in the world which might have an impact on these industries. Use a lively, engaging style with emojis, bite-sized chunks, short paragraphs, and fun language—like a morning coffee chat with global drama. Include balanced sources without shying away from politically incorrect but substantiated claims. Structure it with a catchy title, subsections, and end with any broader implications if relevant. Keep it concise yet comprehensive. Do not include any filler, transitional, or motivational phrases such as "grab a coffee", "busy day", "here's your rundown", "that's a wrap", or anything similar. No openers, no closers, no commentary about the briefing itself — just the news content."""
 
 
 def _load_history():
@@ -61,7 +61,11 @@ def fetch_news():
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
             future = pool.submit(_call)
             response = future.result(timeout=300)
-        summary = response.text
+        summary = response.text.strip()
+        # Strip a short non-heading opening line the model sometimes adds
+        lines = summary.splitlines()
+        if lines and not lines[0].startswith("#") and len(lines[0]) < 100:
+            summary = "\n".join(lines[1:]).lstrip()
         _save_today(summary)
         return summary
     except concurrent.futures.TimeoutError:
