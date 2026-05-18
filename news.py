@@ -53,7 +53,6 @@ def fetch_news():
             config=types.GenerateContentConfig(
                 system_instruction=system,
                 tools=[types.Tool(google_search=types.GoogleSearch())],
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
         chunks = []
