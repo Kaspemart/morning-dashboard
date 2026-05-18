@@ -31,7 +31,7 @@ def fetch_news():
     if not api_key:
         return "_News briefing unavailable — GEMINI_API_KEY not set._"
 
-    client = genai.Client(api_key=api_key, http_options={"timeout": 90})
+    client = genai.Client(api_key=api_key, http_options={"timeout": 240})
 
     history = _load_history()
     system = (
@@ -47,7 +47,7 @@ def fetch_news():
         )
 
     try:
-        response = client.models.generate_content(
+        stream = client.models.generate_content_stream(
             model="gemini-2.5-flash",
             contents=NEWS_PROMPT,
             config=types.GenerateContentConfig(
@@ -56,7 +56,11 @@ def fetch_news():
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
-        summary = response.text
+        chunks = []
+        for chunk in stream:
+            if chunk.text:
+                chunks.append(chunk.text)
+        summary = "".join(chunks)
         _save_today(summary)
         return summary
     except Exception as e:
